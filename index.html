@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PyroGuard AI — Παρακολούθηση Έργων</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A1422;
+    --bg-elevated:#0D1B2E;
+    --card:#122339;
+    --card-hover:#15293F;
+    --border:#1E3350;
+    --border-soft:#182B45;
+    --text:#E7EDF6;
+    --text-dim:#93A4BE;
+    --text-faint:#5E7090;
+    --ember:#FF6A2B;
+    --ember-light:#FFA552;
+    --ember-soft:rgba(255,106,43,0.14);
+    --teal:#36D6A6;
+    --teal-soft:rgba(54,214,166,0.14);
+    --amber:#FFC23C;
+    --amber-soft:rgba(255,194,60,0.14);
+    --blue:#4C8DFF;
+    --blue-soft:rgba(76,141,255,0.14);
+    --rose:#E8836B;
+    --rose-soft:rgba(232,131,107,0.14);
+    --radius:14px;
+    --radius-sm:9px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 15% -10%, rgba(255,106,43,0.10), transparent 40%),
+      radial-gradient(circle at 100% 0%, rgba(76,141,255,0.06), transparent 45%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    min-height:100vh;
+    padding:28px 20px 80px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+
+  .header{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:26px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:14px;}
+  .flame-mark{width:42px;height:42px;flex-shrink:0;filter:drop-shadow(0 0 10px rgba(255,106,43,0.45));}
+  .brand h1{font-family:'Space Grotesk',sans-serif;font-size:22px;font-weight:700;letter-spacing:0.5px;margin:0;color:var(--text);}
+  .brand h1 span{color:var(--ember-light);}
+  .brand p{margin:2px 0 0;font-size:13px;color:var(--text-dim);}
+  .btn{font-family:'Inter',sans-serif;font-weight:600;font-size:14px;border:none;border-radius:10px;padding:11px 18px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:transform .12s ease, filter .12s ease;}
+  .btn:active{transform:scale(0.97);}
+  .btn-primary{background:linear-gradient(135deg,var(--ember),#FF8A4C);color:#1A0A02;box-shadow:0 4px 16px rgba(255,106,43,0.28);}
+  .btn-primary:hover{filter:brightness(1.07);}
+  .btn-ghost{background:var(--card);color:var(--text-dim);border:1px solid var(--border);}
+  .btn-ghost:hover{color:var(--text);border-color:var(--ember);}
+  .btn-danger-confirm{background:var(--rose-soft);color:var(--rose);border:1px solid var(--rose);}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:24px;}
+  .stat-tile{background:var(--card);border:1px solid var(--border-soft);border-radius:var(--radius);padding:16px 18px;}
+  .stat-tile .label{font-size:11.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px;}
+  .stat-tile .value{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:600;color:var(--text);}
+  .stat-tile .value.ember{color:var(--ember-light);}
+  .stat-tile .value.teal{color:var(--teal);}
+  .stat-tile .value.rose{color:var(--rose);}
+
+  .filters{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+  .filters input, .filters select{background:var(--card);border:1px solid var(--border-soft);color:var(--text);border-radius:9px;padding:10px 12px;font-family:'Inter',sans-serif;font-size:13.5px;}
+  .filters input{flex:1;min-width:180px;}
+  .filters input:focus, .filters select:focus{outline:none;border-color:var(--ember);}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;}
+  .card{background:var(--card);border:1px solid var(--border-soft);border-radius:var(--radius);padding:18px 18px 16px;display:flex;flex-direction:column;gap:13px;transition:border-color .15s ease;}
+  .card:hover{border-color:var(--border);}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .card-title{font-family:'Space Grotesk',sans-serif;font-size:16.5px;font-weight:600;color:var(--text);line-height:1.3;}
+  .card-client{font-size:12.5px;color:var(--text-dim);margin-top:3px;}
+  .badge{font-size:10.5px;font-weight:600;padding:4px 9px;border-radius:6px;letter-spacing:0.3px;white-space:nowrap;text-transform:uppercase;}
+  .badge-public{background:var(--blue-soft);color:var(--blue);}
+  .badge-private{background:var(--rose-soft);color:var(--rose);}
+
+  .trail{display:flex;align-items:center;margin:2px 0 0;}
+  .trail-node{display:flex;flex-direction:column;align-items:center;flex:1;position:relative;}
+  .trail-dot{width:13px;height:13px;border-radius:50%;border:2px solid var(--border);background:var(--bg-elevated);z-index:1;transition:all .2s ease;}
+  .trail-dot.filled{background:radial-gradient(circle at 35% 30%, var(--ember-light), var(--ember));border-color:var(--ember);box-shadow:0 0 8px rgba(255,106,43,0.55);}
+  .trail-dot.current{box-shadow:0 0 0 4px var(--ember-soft), 0 0 10px rgba(255,106,43,0.6);}
+  .trail-line{position:absolute;top:6px;left:50%;width:100%;height:2px;background:var(--border);z-index:0;}
+  .trail-line.filled{background:linear-gradient(90deg,var(--ember),var(--ember-light));}
+  .trail-node:last-child .trail-line{display:none;}
+  .trail-label{font-size:9px;color:var(--text-faint);margin-top:6px;text-align:center;line-height:1.2;}
+  .trail-node.active .trail-label{color:var(--ember-light);font-weight:600;}
+
+  .block-label{font-size:10px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:-3px;}
+
+  .costs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--bg-elevated);border-radius:var(--radius-sm);padding:12px 14px;}
+  .cost-item .k{font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.3px;}
+  .cost-item .v{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--text);margin-top:2px;}
+  .cost-item.full{grid-column:1 / -1;border-top:1px solid var(--border-soft);padding-top:8px;margin-top:2px;}
+  .cost-item.full .v{color:var(--teal);font-size:15px;}
+
+  .margin-box{background:var(--bg-elevated);border-radius:var(--radius-sm);padding:10px 14px;border:1px solid var(--border-soft);}
+  .margin-row{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:var(--text-dim);padding:3px 0;}
+  .margin-row b{font-family:'JetBrains Mono',monospace;font-size:13.5px;}
+  .margin-row b.positive{color:var(--teal);}
+  .margin-row b.negative{color:var(--rose);}
+
+  .next-action{display:flex;gap:8px;font-size:12.5px;color:var(--text-dim);background:var(--amber-soft);border:1px solid rgba(255,194,60,0.25);border-radius:var(--radius-sm);padding:9px 11px;align-items:flex-start;}
+  .next-action svg{flex-shrink:0;margin-top:1px;}
+  .next-action b{color:var(--amber);font-weight:600;}
+
+  details.section{border-top:1px solid var(--border-soft);padding-top:10px;}
+  details.section summary{cursor:pointer;font-size:12.5px;color:var(--text-dim);font-weight:600;list-style:none;display:flex;align-items:center;gap:6px;}
+  details.section summary::-webkit-details-marker{display:none;}
+  details.section summary::before{content:'›';display:inline-block;transition:transform .15s ease;color:var(--ember-light);font-size:15px;}
+  details.section[open] summary::before{transform:rotate(90deg);}
+  .mini-list{margin:10px 0 0;display:flex;flex-direction:column;gap:7px;}
+  .mini-row{display:flex;gap:8px;align-items:center;font-size:12.5px;}
+  .mini-row .dot{width:6px;height:6px;border-radius:50%;margin-top:1px;flex-shrink:0;}
+  .mini-row .dot.done{background:var(--teal);}
+  .mini-row .dot.pending{background:var(--text-faint);}
+  .mini-row .txt{color:var(--text-dim);line-height:1.4;flex:1;}
+  .mini-row .date{font-family:'JetBrains Mono',monospace;color:var(--text-faint);font-size:11px;white-space:nowrap;}
+  .mini-row .cost-tag{font-family:'JetBrains Mono',monospace;color:var(--text);font-size:11.5px;white-space:nowrap;font-weight:600;}
+  .mini-row.total-row{border-top:1px solid var(--border-soft);padding-top:7px;margin-top:2px;}
+  .mini-row.total-row .txt{color:var(--text);font-weight:600;}
+  .order-tag{font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:5px;text-transform:uppercase;flex-shrink:0;}
+  .tag-pending{background:var(--amber-soft);color:var(--amber);}
+  .tag-ordered{background:var(--blue-soft);color:var(--blue);}
+  .tag-delivered{background:var(--teal-soft);color:var(--teal);}
+  .tag-once{background:var(--amber-soft);color:var(--amber);}
+  .tag-monthly{background:var(--blue-soft);color:var(--blue);}
+  .tag-yearly{background:var(--teal-soft);color:var(--teal);}
+  .notes-text{font-size:12.5px;color:var(--text-dim);line-height:1.5;margin-top:8px;}
+  .empty-hint{font-size:12px;color:var(--text-faint);font-style:italic;}
+
+  .card-actions{display:flex;gap:8px;margin-top:2px;}
+  .card-actions .btn{padding:7px 12px;font-size:12.5px;flex:1;justify-content:center;}
+
+  .empty-state{text-align:center;padding:70px 20px;color:var(--text-faint);}
+  .empty-state svg{margin-bottom:14px;opacity:0.5;}
+
+  .modal-backdrop{position:fixed;inset:0;background:rgba(4,8,14,0.72);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:100;}
+  .modal-backdrop.open{display:flex;}
+  .modal{background:var(--bg-elevated);border:1px solid var(--border);border-radius:16px;width:100%;max-width:640px;padding:26px 26px 22px;}
+  .modal h2{font-family:'Space Grotesk',sans-serif;font-size:18px;margin:0 0 18px;color:var(--text);}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12px;color:var(--text-dim);margin-bottom:6px;font-weight:500;}
+  .field input, .field select, .field textarea{width:100%;background:var(--card);border:1px solid var(--border-soft);color:var(--text);border-radius:9px;padding:10px 12px;font-family:'Inter',sans-serif;font-size:13.5px;}
+  .field textarea{resize:vertical;min-height:60px;font-family:'Inter',sans-serif;}
+  .field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--ember);}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .row4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;}
+  .subhead{font-size:12.5px;font-weight:600;color:var(--text);margin:18px 0 10px;display:flex;justify-content:space-between;align-items:center;}
+  .subhead .hint{font-size:10.5px;color:var(--text-faint);font-weight:400;margin-left:6px;}
+  .subhead .add-row-btn{font-size:11.5px;color:var(--ember-light);background:none;border:none;cursor:pointer;font-weight:600;}
+  .editor-row{display:grid;grid-template-columns:1fr 48px 75px 95px 88px 24px;gap:5px;margin-bottom:6px;align-items:center;}
+  .editor-row input, .editor-row select{padding:7px 8px;font-size:12px;}
+  .editor-row-m{display:grid;grid-template-columns:90px 1fr 24px;gap:6px;margin-bottom:6px;align-items:center;}
+  .editor-row-m input[type=text]{padding:7px 9px;font-size:12.5px;}
+  .editor-row-exp{display:grid;grid-template-columns:1fr 95px 105px 24px;gap:6px;margin-bottom:6px;align-items:center;}
+  .editor-row-exp input, .editor-row-exp select{padding:7px 8px;font-size:12.5px;}
+  .rm-btn{background:var(--rose-soft);color:var(--rose);border:none;border-radius:6px;width:24px;height:26px;cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;}
+  .check-wrap{display:flex;align-items:center;gap:5px;}
+  .modal-footer{display:flex;justify-content:flex-end;gap:10px;margin-top:22px;}
+
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--ember);color:var(--text);padding:11px 18px;border-radius:10px;font-size:13px;z-index:200;opacity:0;transition:opacity .25s ease;pointer-events:none;}
+  .toast.show{opacity:1;}
+
+  footer{margin-top:36px;text-align:center;font-size:11.5px;color:var(--text-faint);}
+  footer a{color:var(--text-faint);text-decoration:underline;cursor:pointer;}
+
+  @media (max-width:680px){
+    .row2,.row4{grid-template-columns:1fr 1fr;}
+    .editor-row{grid-template-columns:1fr;}
+    .editor-row-m{grid-template-columns:1fr;}
+    .editor-row-exp{grid-template-columns:1fr;}
+    .trail-label{display:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="brand">
+      <svg class="flame-mark" viewBox="0 0 48 48" fill="none">
+        <path d="M24 4C24 4 14 14 14 25C14 33.5 19 40 24 40C29 40 34 33.5 34 25C34 21 32 18 30 16C30 20 27 22 24 22C24 16 27 12 22 4C22 4 24 4 24 4Z" fill="url(#g1)"/>
+        <defs><linearGradient id="g1" x1="14" y1="4" x2="34" y2="40" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#FFC23C"/><stop offset="0.5" stop-color="#FF6A2B"/><stop offset="1" stop-color="#C23E10"/>
+        </linearGradient></defs>
+      </svg>
+      <div>
+        <h1>Pyro<span>Guard</span> AI — Tracker</h1>
+        <p>Παρακολούθηση έργων · Argos Group · προώθηση → παραγγελία → εγκατάσταση</p>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="openAddModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      Νέος Σταθμός
+    </button>
+  </div>
+
+  <div class="stats" id="statsRow"></div>
+
+  <div class="filters">
+    <input type="text" id="searchInput" placeholder="Αναζήτηση σταθμού, πελάτη, τοποθεσίας…" oninput="render()">
+    <select id="sectorFilter" onchange="render()">
+      <option value="all">Όλοι οι τομείς</option>
+      <option value="public">Δημόσιος</option>
+      <option value="private">Ιδιωτικός</option>
+    </select>
+    <select id="stageFilter" onchange="render()">
+      <option value="all">Όλα τα στάδια</option>
+    </select>
+    <button type="button" class="btn btn-ghost" onclick="loadStations()" title="Φόρτωση τελευταίων δεδομένων από τη βάση">↻ Ανανέωση</button>
+  </div>
+
+  <div class="grid" id="stationGrid"></div>
+
+  <footer>Τα δεδομένα αποθηκεύονται σε κοινή βάση δεδομένων (Supabase) — ορατά σε όποιον έχει αυτό το link. <a onclick="resetAllData()">Επαναφορά όλων των δεδομένων</a></footer>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <h2 id="modalTitle">Νέος Σταθμός</h2>
+    <form id="stationForm" onsubmit="saveStationForm(event)">
+      <div class="field">
+        <label>Όνομα σταθμού / έργου</label>
+        <input type="text" id="f_name" required placeholder="π.χ. Κορακιά — Δήμος Ερμιονίδας">
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Πελάτης / Φορέας</label>
+          <input type="text" id="f_client" placeholder="π.χ. Δήμος Ερμιονίδας">
+        </div>
+        <div class="field">
+          <label>Τομέας</label>
+          <select id="f_sector">
+            <option value="public">Δημόσιος</option>
+            <option value="private">Ιδιωτικός</option>
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Τοποθεσία</label>
+          <input type="text" id="f_location" placeholder="π.χ. Πύργος Κορακιά, Ερμιονίδα">
+        </div>
+        <div class="field">
+          <label>Στάδιο</label>
+          <select id="f_stage"></select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Επόμενη ενέργεια / προθεσμία</label>
+        <input type="text" id="f_nextDeadline" placeholder="π.χ. Επιβεβαίωση αρμόδιας αρχής για Άρθρο 30">
+      </div>
+
+      <div class="subhead">Τιμολόγηση προς πελάτη (EUR) <span class="hint">— τι πληρώνει ο πελάτης</span></div>
+      <div class="row4">
+        <div class="field"><label>Hardware/εγκατ.</label><input type="number" id="f_price_hw" min="0" step="100"></div>
+        <div class="field"><label>Ετήσια άδεια</label><input type="number" id="f_price_lic" min="0" step="100"></div>
+        <div class="field"><label>Starlink εφάπαξ</label><input type="number" id="f_price_sl_setup" min="0" step="10"></div>
+        <div class="field"><label>Starlink/μήνα</label><input type="number" id="f_price_sl_month" min="0" step="5"></div>
+      </div>
+
+      <div class="subhead">Κόστη υλοποίησης (EUR) <span class="hint">— τι μας κοστίζει</span> <button type="button" class="add-row-btn" onclick="addExpenseRow()">+ προσθήκη</button></div>
+      <div id="expensesEditor"></div>
+
+      <div class="subhead">Λίστα παραγγελιών <button type="button" class="add-row-btn" onclick="addOrderItemRow()">+ προσθήκη</button></div>
+      <div id="orderItemsEditor"></div>
+
+      <div class="subhead">Ορόσημα / ημερομηνίες <button type="button" class="add-row-btn" onclick="addMilestoneRow()">+ προσθήκη</button></div>
+      <div id="milestonesEditor"></div>
+
+      <div class="field" style="margin-top:14px;">
+        <label>Σημειώσεις</label>
+        <textarea id="f_notes" placeholder="Ελεύθερες σημειώσεις…"></textarea>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">Άκυρο</button>
+        <button type="submit" class="btn btn-primary">Αποθήκευση</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ---- Supabase configuration ----
+   1) Create a free project at https://supabase.com
+   2) Run supabase/schema.sql in the Supabase SQL Editor
+   3) Project URL: Settings → Integrations → Data API
+      Key: Settings → API Keys → "Publishable key" (sb_publishable_...)
+      (παλιά λεγόταν "anon public key" — ίδιο πράγμα, νέο όνομα)
+*/
+const SUPABASE_URL = 'https://pscflrbexrdkdutyolso.supabase.co/rest/v1/';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_mhiGjZqtv2hYhwqDC-o6Fw_GrieyMgm';
+const CONFIGURED = !SUPABASE_URL.includes('YOUR-PROJECT-REF') && !SUPABASE_PUBLISHABLE_KEY.includes('YOUR-KEY-HERE');
+const { createClient } = supabase;
+const db = CONFIGURED ? createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+
+const STAGES = [
+  {key:'prospecting',  label:'Προώθηση'},
+  {key:'proposal',     label:'Πρόταση'},
+  {key:'licensing',    label:'Αδειοδότηση'},
+  {key:'ordering',     label:'Παραγγελία'},
+  {key:'installation', label:'Εγκατάσταση'},
+  {key:'operational',  label:'Λειτουργία'}
+];
+const stageIndex = k => STAGES.findIndex(s=>s.key===k);
+
+const ORDER_STATUSES = [
+  {key:'pending',   label:'Εκκρεμεί',     tag:'tag-pending'},
+  {key:'ordered',   label:'Παραγγέλθηκε', tag:'tag-ordered'},
+  {key:'delivered', label:'Παραλήφθηκε',  tag:'tag-delivered'}
+];
+
+const FREQUENCIES = [
+  {key:'once',    label:'Εφάπαξ',  tag:'tag-once'},
+  {key:'monthly', label:'Μηνιαίο', tag:'tag-monthly'},
+  {key:'yearly',  label:'Ετήσιο',  tag:'tag-yearly'}
+];
+
+let stations = [];
+let editing = null;
+let deleteArmed = null;
+
+function uid(){ return (crypto.randomUUID ? crypto.randomUUID() : 'id_'+Date.now()+'_'+Math.random().toString(36).slice(2)); }
+
+function seedStations(){
+  return [
+    {
+      id: uid(), name:'Κορακιά — Δήμος Ερμιονίδας', client:'Δήμος Ερμιονίδας', sector:'public',
+      location:'Πύργος Κορακιά, Ερμιονίδα', stage:'licensing',
+      pricing:{hw:12000, lic:18000, slSetup:0, slMonth:45},
+      expenses:[],
+      nextDeadline:'Επιβεβαίωση αρμόδιας αρχής (ΥΔΟΜ ή Δασαρχείο Ναυπλίου) για Βεβαίωση Άρθρου 30',
+      notes:'Ανάλυση εξαιρέσεων αδειοδότησης σε 8 φορείς ολοκληρωμένη. GDPR/DPIA τμήμα έτοιμο — εκκρεμεί Σύμβαση Επεξεργασίας Δεδομένων (Άρθρο 28 GDPR) παράλληλα με τη δημοτική σύμβαση.',
+      orderItems:[],
+      milestones:[
+        {id:uid(), date:'2026-04', label:'Ανάλυση εξαιρέσεων αδειοδότησης (8 φορείς) ολοκληρωμένη', done:true},
+        {id:uid(), date:'2026-05', label:'Επιστολή ενημέρωσης προς Δ/νση Δασών Π.Ε. Αργολίδας', done:true},
+        {id:uid(), date:'2026-05', label:'Τεχνική Έκθεση Μηχανικού για Βεβαίωση Άρθρου 30', done:true},
+        {id:uid(), date:'', label:'Υποβολή μέσω e-Άδειες — εκκρεμεί επιβεβαίωση αρμόδιας αρχής', done:false}
+      ]
+    },
+    {
+      id: uid(), name:'Ναύπλιο — Σ1 Τίτυνθα & Σ2 Πελεή', client:'Δήμος Ναυπλίου', sector:'public',
+      location:'Σ1: Προφήτης Ηλίας, Τίτυνθα · Σ2: Πελεή, Δίδυμο Όρος', stage:'proposal',
+      pricing:{hw:24000, lic:36000, slSetup:0, slMonth:90},
+      expenses:[],
+      nextDeadline:'Επιτόπια επιβεβαίωση συντεταγμένων Σ2 Πελεή πριν την οριστικοποίηση',
+      notes:'Πρόταση 2 σταθμών παραδόθηκε (PyroGuardAI_Ναυπλιο_Προσφορα_001-2026.docx) με προσαρμοσμένες μελέτες ανά σταθμό. Κόστη υπολογισμένα ως 2× standard pricing.',
+      orderItems:[],
+      milestones:[
+        {id:uid(), date:'2026-05', label:'Παράδοση πρότασης 2 σταθμών στον Δήμο', done:true},
+        {id:uid(), date:'', label:'Επιτόπια επιβεβαίωση συντεταγμένων Σ2 Πελεή', done:false}
+      ]
+    },
+    {
+      id: uid(), name:'ΣΠΑΥ / Υμηττός — Δίκτυο 7 σταθμών', client:'ΣΠΑΥ (Σύνδεσμος Προστασίας & Ανάπτυξης Υμηττού)', sector:'public',
+      location:'Υμηττός — περιμετρική διάταξη 7 σταθμών', stage:'prospecting',
+      pricing:{hw:173600, lic:126000, slSetup:6020, slMonth:2450},
+      expenses:[],
+      nextDeadline:'Προγραμματισμός παρουσίασης πρότασης δικτύου 7 σταθμών',
+      notes:'Τιμολόγηση δικτύου: €24.800/σταθμό hardware, €18.000/σταθμό/έτος άδεια, €860 Starlink εφάπαξ/σταθμό, €350/μήνα συνδρομή/σταθμό.',
+      orderItems:[],
+      milestones:[{id:uid(), date:'', label:'Αρχική προσέγγιση / παρουσίαση πρότασης', done:false}]
+    },
+    {
+      id: uid(), name:'Amanzoe — Grivalia Properties', client:'Grivalia Properties / Amanzoe', sector:'private',
+      location:'Porto Heli', stage:'prospecting',
+      pricing:{hw:0, lic:0, slSetup:0, slMonth:0},
+      expenses:[],
+      nextDeadline:'Αρχική επαφή / παρουσίαση αξίας επένδυσης (ROI)',
+      notes:'Ιδιωτικός τομέας — πολυτελής φιλοξενία. Πλαισίωση πρότασης με έμφαση σε προστασία επένδυσης / ROI παρά σε κανονιστική συμμόρφωση.',
+      orderItems:[], milestones:[]
+    },
+    {
+      id: uid(), name:'Fraport Greece — Αερολιμένες', client:'Fraport Greece', sector:'private',
+      location:'Περιφερειακά αεροδρόμια Fraport', stage:'prospecting',
+      pricing:{hw:0, lic:0, slSetup:0, slMonth:0},
+      expenses:[],
+      nextDeadline:'Αρχική επαφή με τμήμα υποδομών / ασφάλειας',
+      notes:'Υποδομές κρίσιμης σημασίας — πλαισίωση γύρω από κανονιστική συμμόρφωση και συνέχεια λειτουργίας.',
+      orderItems:[], milestones:[]
+    }
+  ];
+}
+
+function migrateStation(s){
+  if(!s.pricing){
+    s.pricing = s.costs ? {...s.costs} : {hw:0,lic:0,slSetup:0,slMonth:0};
+  }
+  if(s.costs) delete s.costs;
+  if(!s.expenses) s.expenses = [];
+  if(!s.orderItems) s.orderItems = [];
+  s.orderItems.forEach(o=>{ if(o.cost===undefined || o.cost===null) o.cost = 0; });
+  if(!s.milestones) s.milestones = [];
+  return s;
+}
+
+async function loadStations(){
+  if(!CONFIGURED){
+    document.getElementById('stationGrid').innerHTML = `<div class="empty-state" style="grid-column:1/-1;">${emptyIcon()}<div>Δεν έχει ρυθμιστεί ακόμα η σύνδεση με τη βάση δεδομένων.<br>Άνοιξε το index.html και συμπλήρωσε SUPABASE_URL / SUPABASE_ANON_KEY (βλ. README.md).</div></div>`;
+    return;
+  }
+  try{
+    const { data, error } = await db.from('stations').select('data').order('updated_at', { ascending:true });
+    if(error) throw error;
+    if(!data || data.length===0){
+      const seeds = seedStations();
+      for(const s of seeds){ await db.from('stations').insert({ id:s.id, data:s }); }
+      stations = seeds;
+    } else {
+      stations = data.map(row=>migrateStation(row.data));
+    }
+  }catch(e){
+    console.error('Load failed', e);
+    showToast('⚠ Σφάλμα φόρτωσης από τη βάση — έλεγξε τη σύνδεση/τα κλειδιά');
+    stations = [];
+  }
+  populateStageFilter();
+  render();
+}
+
+async function saveStationToDb(station){
+  try{
+    const { error } = await db.from('stations').upsert({ id: station.id, data: station, updated_at: new Date().toISOString() });
+    if(error) throw error;
+  }catch(e){
+    console.error('Save failed', e);
+    showToast('⚠ Σφάλμα αποθήκευσης στη βάση — δοκίμασε ξανά');
+  }
+}
+
+async function deleteStationFromDb(id){
+  try{
+    const { error } = await db.from('stations').delete().eq('id', id);
+    if(error) throw error;
+  }catch(e){
+    console.error('Delete failed', e);
+    showToast('⚠ Σφάλμα διαγραφής από τη βάση');
+  }
+}
+
+function formatEUR(n){
+  return (Number(n)||0).toLocaleString('el-GR') + ' €';
+}
+function formatSigned(n){
+  const v = Number(n)||0;
+  return (v>=0?'+':'') + formatEUR(v);
+}
+
+function populateStageFilter(){
+  const sel = document.getElementById('stageFilter');
+  if(!sel.dataset.populated){
+    STAGES.forEach(s=>{
+      const opt = document.createElement('option');
+      opt.value = s.key; opt.textContent = s.label;
+      sel.appendChild(opt);
+    });
+    sel.dataset.populated = '1';
+  }
+  const fsel = document.getElementById('f_stage');
+  if(!fsel.dataset.populated){
+    STAGES.forEach(s=>{
+      const opt = document.createElement('option');
+      opt.value = s.key; opt.textContent = s.label;
+      fsel.appendChild(opt);
+    });
+    fsel.dataset.populated = '1';
+  }
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function stationFinance(s){
+  const p = s.pricing || {hw:0,lic:0,slSetup:0,slMonth:0};
+  const revY1 = (Number(p.hw)||0) + (Number(p.lic)||0) + (Number(p.slSetup)||0);
+  const revRecurring = (Number(p.lic)||0) + (Number(p.slMonth)||0)*12;
+
+  let expensesY1 = 0, expensesRecurring = 0;
+  (s.expenses||[]).forEach(e=>{
+    const amt = Number(e.amount)||0;
+    if(e.frequency==='monthly'){ expensesY1 += amt*12; expensesRecurring += amt*12; }
+    else if(e.frequency==='yearly'){ expensesY1 += amt; expensesRecurring += amt; }
+    else { expensesY1 += amt; }
+  });
+
+  let ordersCost = 0;
+  (s.orderItems||[]).forEach(o=>{ ordersCost += Number(o.cost)||0; });
+
+  const costY1 = expensesY1 + ordersCost;
+  const costRecurring = expensesRecurring;
+
+  return {
+    revY1, revRecurring, expensesY1, expensesRecurring, ordersCost,
+    costY1, costRecurring,
+    marginY1: revY1 - costY1, marginRecurring: revRecurring - costRecurring
+  };
+}
+
+function renderStats(){
+  const finances = stations.map(stationFinance);
+  const total = stations.length;
+  const operational = stations.filter(s=>s.stage==='operational').length;
+  const totalRevY1 = finances.reduce((a,f)=>a+f.revY1,0);
+  const totalCostY1 = finances.reduce((a,f)=>a+f.costY1,0);
+  const totalMarginY1 = totalRevY1 - totalCostY1;
+
+  const tiles = [
+    {label:'Ενεργά έργα', value: total, cls:''},
+    {label:'Έσοδα pipeline (Έτος 1)', value: formatEUR(totalRevY1), cls:'ember'},
+    {label:'Έξοδα pipeline (Έτος 1)', value: formatEUR(totalCostY1), cls:'rose'},
+    {label:'Καθαρό περιθώριο (Έτος 1)', value: formatSigned(totalMarginY1), cls: totalMarginY1>=0?'teal':'rose'},
+    {label:'Σε λειτουργία', value: operational, cls:'teal'}
+  ];
+  document.getElementById('statsRow').innerHTML = tiles.map(t=>`
+    <div class="stat-tile">
+      <div class="label">${t.label}</div>
+      <div class="value ${t.cls}">${t.value}</div>
+    </div>`).join('');
+}
+
+function renderTrail(currentStage){
+  const curIdx = stageIndex(currentStage);
+  return `<div class="trail">` + STAGES.map((s,i)=>{
+    const filled = i <= curIdx;
+    const isCurrent = i === curIdx;
+    return `
+      <div class="trail-node ${isCurrent?'active':''}">
+        <div class="trail-line ${i < curIdx ? 'filled':''}"></div>
+        <div class="trail-dot ${filled?'filled':''} ${isCurrent?'current':''}"></div>
+        <div class="trail-label">${s.label}</div>
+      </div>`;
+  }).join('') + `</div>`;
+}
+
+function clockIcon(){
+  return `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`;
+}
+function emptyIcon(){
+  return `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 17l4-9 4 6 3-4 4 7" /></svg>`;
+}
+
+function renderStationCard(s){
+  const f = stationFinance(s);
+
+  const orderHtml = (s.orderItems && s.orderItems.length) ? s.orderItems.map(o=>{
+    const st = ORDER_STATUSES.find(x=>x.key===o.status) || ORDER_STATUSES[0];
+    return `<div class="mini-row">
+      <span class="order-tag ${st.tag}">${st.label}</span>
+      <span class="txt">${escapeHtml(o.item)}${o.qty?(' × '+escapeHtml(String(o.qty))):''}</span>
+      ${Number(o.cost)?`<span class="cost-tag">${formatEUR(o.cost)}</span>`:''}
+      ${o.date?`<span class="date">${escapeHtml(o.date)}</span>`:''}
+    </div>`;
+  }).join('') : `<div class="empty-hint">Δεν υπάρχουν καταχωρημένες παραγγελίες ακόμα.</div>`;
+  const orderTotalRow = f.ordersCost ? `<div class="mini-row total-row"><span class="txt">Σύνολο κόστους παραγγελιών</span><span class="cost-tag">${formatEUR(f.ordersCost)}</span></div>` : '';
+
+  const expenseHtml = (s.expenses && s.expenses.length) ? s.expenses.map(e=>{
+    const fr = FREQUENCIES.find(x=>x.key===e.frequency) || FREQUENCIES[0];
+    return `<div class="mini-row">
+      <span class="order-tag ${fr.tag}">${fr.label}</span>
+      <span class="txt">${escapeHtml(e.label)}</span>
+      <span class="cost-tag">${formatEUR(e.amount)}</span>
+    </div>`;
+  }).join('') : `<div class="empty-hint">Δεν έχουν καταχωρηθεί κόστη υλοποίησης.</div>`;
+  const expenseTotalRow = (s.expenses && s.expenses.length) ? `<div class="mini-row total-row"><span class="txt">Σύνολο κοστών (Έτος 1)</span><span class="cost-tag">${formatEUR(f.expensesY1)}</span></div>` : '';
+
+  const milestoneHtml = (s.milestones && s.milestones.length) ? s.milestones.map(m=>`
+    <div class="mini-row">
+      <span class="dot ${m.done?'done':'pending'}"></span>
+      <span class="txt">${escapeHtml(m.label)}</span>
+      ${m.date?`<span class="date">${escapeHtml(m.date)}</span>`:''}
+    </div>`).join('') : `<div class="empty-hint">Δεν έχουν καταχωρηθεί ορόσημα.</div>`;
+
+  const deleteLabel = deleteArmed === s.id ? 'Επιβεβαίωση διαγραφής;' : 'Διαγραφή';
+  const deleteCls = deleteArmed === s.id ? 'btn-danger-confirm' : 'btn-ghost';
+
+  return `
+  <div class="card">
+    <div class="card-top">
+      <div>
+        <div class="card-title">${escapeHtml(s.name)}</div>
+        <div class="card-client">${escapeHtml(s.client||'—')} · ${escapeHtml(s.location||'')}</div>
+      </div>
+      <span class="badge ${s.sector==='private'?'badge-private':'badge-public'}">${s.sector==='private'?'Ιδιωτικός':'Δημόσιος'}</span>
+    </div>
+
+    ${renderTrail(s.stage)}
+
+    <div>
+      <div class="block-label">Τιμολόγηση πελάτη</div>
+      <div class="costs" style="margin-top:6px;">
+        <div class="cost-item"><div class="k">Hardware / εγκατ.</div><div class="v">${formatEUR(s.pricing.hw)}</div></div>
+        <div class="cost-item"><div class="k">Ετήσια άδεια</div><div class="v">${formatEUR(s.pricing.lic)}</div></div>
+        ${(Number(s.pricing.slSetup)||Number(s.pricing.slMonth)) ? `
+        <div class="cost-item"><div class="k">Starlink εφάπαξ</div><div class="v">${formatEUR(s.pricing.slSetup)}</div></div>
+        <div class="cost-item"><div class="k">Starlink / μήνα</div><div class="v">${formatEUR(s.pricing.slMonth)}</div></div>` : ''}
+        <div class="cost-item full"><div class="k">Σύνολο εσόδων Έτος 1 · Επαναλ. (Έτος 2+: ${formatEUR(f.revRecurring)}/έτος)</div><div class="v">${formatEUR(f.revY1)}</div></div>
+      </div>
+    </div>
+
+    <div class="margin-box">
+      <div class="margin-row"><span>Καθαρό περιθώριο Έτος 1</span><b class="${f.marginY1>=0?'positive':'negative'}">${formatSigned(f.marginY1)}</b></div>
+      <div class="margin-row"><span>Περιθώριο / έτος (από Έτος 2)</span><b class="${f.marginRecurring>=0?'positive':'negative'}">${formatSigned(f.marginRecurring)}</b></div>
+    </div>
+
+    ${s.nextDeadline ? `<div class="next-action">${clockIcon()}<div><b>Επόμενο:</b> ${escapeHtml(s.nextDeadline)}</div></div>` : ''}
+
+    <details class="section">
+      <summary>Κόστη υλοποίησης (${(s.expenses||[]).length})</summary>
+      <div class="mini-list">${expenseHtml}${expenseTotalRow}</div>
+    </details>
+    <details class="section">
+      <summary>Λίστα παραγγελιών (${(s.orderItems||[]).length})</summary>
+      <div class="mini-list">${orderHtml}${orderTotalRow}</div>
+    </details>
+    <details class="section">
+      <summary>Ορόσημα / Χρονολόγιο (${(s.milestones||[]).length})</summary>
+      <div class="mini-list">${milestoneHtml}</div>
+    </details>
+    ${s.notes ? `<details class="section"><summary>Σημειώσεις</summary><div class="notes-text">${escapeHtml(s.notes)}</div></details>` : ''}
+
+    <div class="card-actions">
+      <button class="btn btn-ghost" onclick="openEditModal('${s.id}')">Επεξεργασία</button>
+      <button class="btn ${deleteCls}" onclick="handleDeleteClick('${s.id}')">${deleteLabel}</button>
+    </div>
+  </div>`;
+}
+
+function escapeHtml(str){
+  if(str===undefined || str===null) return '';
+  return String(str).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function render(){
+  renderStats();
+  const search = document.getElementById('searchInput').value.trim().toLowerCase();
+  const sectorF = document.getElementById('sectorFilter').value;
+  const stageF = document.getElementById('stageFilter').value;
+
+  let list = stations.filter(s=>{
+    if(sectorF !== 'all' && s.sector !== sectorF) return false;
+    if(stageF !== 'all' && s.stage !== stageF) return false;
+    if(search){
+      const hay = (s.name+' '+s.client+' '+s.location).toLowerCase();
+      if(!hay.includes(search)) return false;
+    }
+    return true;
+  });
+
+  const grid = document.getElementById('stationGrid');
+  if(list.length === 0){
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">${emptyIcon()}<div>Δεν βρέθηκαν σταθμοί με αυτά τα φίλτρα.</div></div>`;
+    return;
+  }
+  grid.innerHTML = list.map(renderStationCard).join('');
+}
+
+function handleDeleteClick(id){
+  if(deleteArmed === id){
+    stations = stations.filter(s=>s.id!==id);
+    deleteArmed = null;
+    deleteStationFromDb(id);
+    render();
+    showToast('Ο σταθμός διαγράφηκε');
+  } else {
+    deleteArmed = id;
+    render();
+    setTimeout(()=>{ if(deleteArmed===id){ deleteArmed=null; render(); } }, 3000);
+  }
+}
+
+function openAddModal(){
+  editing = {
+    id: uid(), name:'', client:'', sector:'public', location:'', stage:'prospecting',
+    pricing:{hw:0, lic:0, slSetup:0, slMonth:0}, expenses:[],
+    nextDeadline:'', notes:'', orderItems:[], milestones:[]
+  };
+  document.getElementById('modalTitle').textContent = 'Νέος Σταθμός';
+  fillForm(editing);
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+function openEditModal(id){
+  const s = stations.find(x=>x.id===id);
+  if(!s) return;
+  editing = JSON.parse(JSON.stringify(s));
+  document.getElementById('modalTitle').textContent = 'Επεξεργασία — ' + s.name;
+  fillForm(editing);
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('modalBackdrop').classList.remove('open');
+  editing = null;
+}
+
+function fillForm(s){
+  document.getElementById('f_name').value = s.name||'';
+  document.getElementById('f_client').value = s.client||'';
+  document.getElementById('f_sector').value = s.sector||'public';
+  document.getElementById('f_location').value = s.location||'';
+  document.getElementById('f_stage').value = s.stage||'prospecting';
+  document.getElementById('f_nextDeadline').value = s.nextDeadline||'';
+  document.getElementById('f_price_hw').value = s.pricing.hw||0;
+  document.getElementById('f_price_lic').value = s.pricing.lic||0;
+  document.getElementById('f_price_sl_setup').value = s.pricing.slSetup||0;
+  document.getElementById('f_price_sl_month').value = s.pricing.slMonth||0;
+  document.getElementById('f_notes').value = s.notes||'';
+  renderExpensesEditor();
+  renderOrderItemsEditor();
+  renderMilestonesEditor();
+}
+
+function renderExpensesEditor(){
+  const wrap = document.getElementById('expensesEditor');
+  if(!editing.expenses.length){
+    wrap.innerHTML = `<div class="empty-hint" style="margin-bottom:6px;">π.χ. Εγκατάσταση €10.000 (εφάπαξ), Άδεια PyroGuard AI €10.000 (ετήσιο), Starlink €45 (μηνιαίο), μεταφορές, άδειες μηχανικού, νομικά…</div>`;
+    return;
+  }
+  wrap.innerHTML = editing.expenses.map((e,i)=>`
+    <div class="editor-row-exp">
+      <input type="text" placeholder="Περιγραφή (π.χ. Μεταφορές, Νομικά)" value="${escapeHtml(e.label)}" oninput="editing.expenses[${i}].label=this.value">
+      <input type="number" placeholder="Ποσό €" value="${e.amount||''}" oninput="editing.expenses[${i}].amount=this.value">
+      <select onchange="editing.expenses[${i}].frequency=this.value">
+        ${FREQUENCIES.map(fr=>`<option value="${fr.key}" ${e.frequency===fr.key?'selected':''}>${fr.label}</option>`).join('')}
+      </select>
+      <button type="button" class="rm-btn" onclick="removeExpenseRow(${i})">×</button>
+    </div>`).join('');
+}
+function addExpenseRow(){
+  editing.expenses.push({id:uid(), label:'', amount:0, frequency:'once'});
+  renderExpensesEditor();
+}
+function removeExpenseRow(i){
+  editing.expenses.splice(i,1);
+  renderExpensesEditor();
+}
+
+function renderOrderItemsEditor(){
+  const wrap = document.getElementById('orderItemsEditor');
+  if(!editing.orderItems.length){
+    wrap.innerHTML = `<div class="empty-hint" style="margin-bottom:6px;">Καμία γραμμή ακόμα — πάτησε «+ προσθήκη».</div>`;
+    return;
+  }
+  wrap.innerHTML = editing.orderItems.map((o,i)=>`
+    <div class="editor-row">
+      <input type="text" placeholder="Είδος" value="${escapeHtml(o.item)}" oninput="editing.orderItems[${i}].item=this.value">
+      <input type="number" placeholder="Ποσ." value="${o.qty||''}" oninput="editing.orderItems[${i}].qty=this.value">
+      <input type="number" placeholder="Κόστος €" value="${o.cost||''}" oninput="editing.orderItems[${i}].cost=this.value">
+      <select onchange="editing.orderItems[${i}].status=this.value">
+        ${ORDER_STATUSES.map(st=>`<option value="${st.key}" ${o.status===st.key?'selected':''}>${st.label}</option>`).join('')}
+      </select>
+      <input type="date" value="${o.date||''}" oninput="editing.orderItems[${i}].date=this.value">
+      <button type="button" class="rm-btn" onclick="removeOrderItemRow(${i})">×</button>
+    </div>`).join('');
+}
+function addOrderItemRow(){
+  editing.orderItems.push({id:uid(), item:'', qty:'', cost:0, status:'pending', date:''});
+  renderOrderItemsEditor();
+}
+function removeOrderItemRow(i){
+  editing.orderItems.splice(i,1);
+  renderOrderItemsEditor();
+}
+
+function renderMilestonesEditor(){
+  const wrap = document.getElementById('milestonesEditor');
+  if(!editing.milestones.length){
+    wrap.innerHTML = `<div class="empty-hint" style="margin-bottom:6px;">Κανένα ορόσημο ακόμα — πάτησε «+ προσθήκη».</div>`;
+    return;
+  }
+  wrap.innerHTML = editing.milestones.map((m,i)=>`
+    <div class="editor-row-m">
+      <input type="text" placeholder="μμμμ-εε" value="${escapeHtml(m.date)}" oninput="editing.milestones[${i}].date=this.value">
+      <input type="text" placeholder="Περιγραφή ορόσημου" value="${escapeHtml(m.label)}" oninput="editing.milestones[${i}].label=this.value">
+      <button type="button" class="rm-btn" onclick="removeMilestoneRow(${i})">×</button>
+    </div>
+    <div class="check-wrap" style="margin:-2px 0 6px 2px;">
+      <input type="checkbox" id="m_done_${i}" ${m.done?'checked':''} onchange="editing.milestones[${i}].done=this.checked">
+      <label for="m_done_${i}" style="font-size:11px;color:var(--text-faint);margin:0;">Ολοκληρωμένο</label>
+    </div>`).join('');
+}
+function addMilestoneRow(){
+  editing.milestones.push({id:uid(), date:'', label:'', done:false});
+  renderMilestonesEditor();
+}
+function removeMilestoneRow(i){
+  editing.milestones.splice(i,1);
+  renderMilestonesEditor();
+}
+
+function saveStationForm(e){
+  e.preventDefault();
+  editing.name = document.getElementById('f_name').value.trim();
+  editing.client = document.getElementById('f_client').value.trim();
+  editing.sector = document.getElementById('f_sector').value;
+  editing.location = document.getElementById('f_location').value.trim();
+  editing.stage = document.getElementById('f_stage').value;
+  editing.nextDeadline = document.getElementById('f_nextDeadline').value.trim();
+  editing.pricing = {
+    hw: Number(document.getElementById('f_price_hw').value)||0,
+    lic: Number(document.getElementById('f_price_lic').value)||0,
+    slSetup: Number(document.getElementById('f_price_sl_setup').value)||0,
+    slMonth: Number(document.getElementById('f_price_sl_month').value)||0
+  };
+  editing.expenses = (editing.expenses||[]).map(x=>({...x, amount:Number(x.amount)||0}));
+  editing.orderItems = (editing.orderItems||[]).map(x=>({...x, cost:Number(x.cost)||0}));
+  editing.notes = document.getElementById('f_notes').value.trim();
+
+  const idx = stations.findIndex(s=>s.id===editing.id);
+  if(idx >= 0) stations[idx] = editing;
+  else stations.push(editing);
+
+  saveStationToDb(editing);
+  closeModal();
+  render();
+  showToast('Αποθηκεύτηκε');
+}
+
+async function resetAllData(){
+  if(deleteArmed === '__RESET__'){
+    deleteArmed = null;
+    try{
+      await db.from('stations').delete().neq('id','');
+      const seeds = seedStations();
+      for(const s of seeds){ await db.from('stations').insert({ id:s.id, data:s }); }
+      stations = seeds;
+    }catch(e){
+      console.error('Reset failed', e);
+      showToast('⚠ Σφάλμα επαναφοράς');
+    }
+    render();
+    showToast('Τα δεδομένα επανήλθαν στα αρχικά — για όλους τους συνεργάτες');
+  } else {
+    deleteArmed = '__RESET__';
+    showToast('Πάτησε ξανά «Επαναφορά» — διαγράφει τα δεδομένα ΟΛΩΝ των συνεργατών');
+    setTimeout(()=>{ if(deleteArmed==='__RESET__') deleteArmed=null; }, 3000);
+  }
+}
+
+loadStations();
+</script>
+</body>
+</html>
